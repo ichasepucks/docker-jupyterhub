@@ -1,0 +1,38 @@
+version: '2.1' # Docker 1.12 or later
+services:
+  jupyterhub:
+    build: .
+    container_name: jupyterhub
+    image: jupyterhub-img
+    ports:
+      - "8000:8000"
+    environment:
+      - "JUPYTERHUB_ARGS="
+      - "DB_HOST=db"
+      - "DB_USER=root"
+      - "DB_PW=P@ssw0rd"
+      - "DB_NAME=jupyterhub"
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mysql:5.7
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci --wait_timeout=120
+    container_name: db
+    ports:
+      - "3306:3306"
+    environment:
+      - "MYSQL_ROOT_PASSWORD=P@ssw0rd"
+      - "MYSQL_DATABASE=jupyterhub"
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      # Can't seem to get the test to use $MYSQL_ROOT_PASSWORD which should be avail in the cont
+      test: ["CMD", "mysqladmin", "-hdb", '-pP@ssw0rd', "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  mysql:
